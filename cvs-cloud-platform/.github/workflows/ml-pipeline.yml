@@ -1,0 +1,45 @@
+name: ML Training Pipeline
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 02:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  train-and-upload:
+    name: Train XGBoost + Upload to S3
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ML dependencies
+        run: pip install xgboost scikit-learn pandas pyarrow joblib boto3 scipy numpy
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Generate synthetic dataset
+        working-directory: ml
+        run: python generate_synthetic_dataset.py
+
+      - name: Train model
+        working-directory: ml
+        run: python train.py
+
+      - name: Upload model to S3
+        working-directory: ml
+        run: python upload_model.py
+
+      - name: Archive results
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-results-${{ github.run_id }}
+          path: ml/results/

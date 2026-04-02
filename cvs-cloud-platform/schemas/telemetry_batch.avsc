@@ -1,0 +1,50 @@
+{
+  "type": "record",
+  "name": "TelemetryBatch",
+  "namespace": "edu.escuelaing.cvs",
+  "doc": "Micro-batch of sensor readings from the CVS mobile agent.",
+  "fields": [
+    {
+      "name": "device_uuid",
+      "type": "string",
+      "doc": "Pseudonymous device identifier (HMAC-SHA256 of real UUID)."
+    },
+    {
+      "name": "batch_timestamp",
+      "type": { "type": "long", "logicalType": "timestamp-millis" },
+      "doc": "UTC timestamp when the batch was created on the device."
+    },
+    {
+      "name": "readings",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "SensorReading",
+          "fields": [
+            {
+              "name": "sensor_type",
+              "type": {
+                "type": "enum",
+                "name": "SensorType",
+                "symbols": ["AMBIENT_LIGHT", "PROXIMITY", "SCREEN_TIME"]
+              }
+            },
+            { "name": "value",      "type": "float"  },
+            { "name": "unit",       "type": "string" },
+            {
+              "name": "sampled_at",
+              "type": { "type": "long", "logicalType": "timestamp-millis" }
+            }
+          ]
+        }
+      }
+    },
+    { "name": "app_version",  "type": "string" },
+    {
+      "name": "consent_hash",
+      "type": "string",
+      "doc": "SHA-256 of the signed user consent document version + timestamp."
+    }
+  ]
+}

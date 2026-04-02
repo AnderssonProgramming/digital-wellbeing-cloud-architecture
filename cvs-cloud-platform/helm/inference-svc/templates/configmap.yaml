@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-config
+data:
+  APP_NAME: {{ .Chart.Name | quote }}
+  LOG_LEVEL: {{ .Values.env.LOG_LEVEL | default "INFO" | quote }}
+  INFLUXDB_URL: {{ .Values.env.INFLUXDB_URL | default "" | quote }}
+  INFLUXDB_ORG: {{ .Values.env.INFLUXDB_ORG | default "cvs-org" | quote }}
+  INFLUXDB_BUCKET: {{ .Values.env.INFLUXDB_BUCKET | default "cvs_platform" | quote }}
+  S3_MODEL_BUCKET: {{ .Values.env.S3_MODEL_BUCKET | default "cvs-model-artifacts" | quote }}

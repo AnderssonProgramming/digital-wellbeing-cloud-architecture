@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cvs-ingestion-sa
+  namespace: ns-ingestion
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cvs-processing-sa
+  namespace: ns-processing
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cvs-data-ml-sa
+  namespace: ns-data-ml
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cvs-monitoring-sa
+  namespace: ns-monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cvs-read-workload
+  namespace: ns-ingestion
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cvs-read-workload
+  namespace: ns-processing
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cvs-read-workload
+  namespace: ns-data-ml
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cvs-monitoring-read
+  namespace: ns-monitoring
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["servicemonitors"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bind-cvs-ingestion-read
+  namespace: ns-ingestion
+subjects:
+  - kind: ServiceAccount
+    name: cvs-ingestion-sa
+    namespace: ns-ingestion
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cvs-read-workload
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bind-cvs-processing-read
+  namespace: ns-processing
+subjects:
+  - kind: ServiceAccount
+    name: cvs-processing-sa
+    namespace: ns-processing
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cvs-read-workload
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bind-cvs-data-ml-read
+  namespace: ns-data-ml
+subjects:
+  - kind: ServiceAccount
+    name: cvs-data-ml-sa
+    namespace: ns-data-ml
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cvs-read-workload
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bind-cvs-monitoring-read
+  namespace: ns-monitoring
+subjects:
+  - kind: ServiceAccount
+    name: cvs-monitoring-sa
+    namespace: ns-monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cvs-monitoring-read

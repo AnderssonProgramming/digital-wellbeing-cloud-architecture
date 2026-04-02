@@ -1,0 +1,46 @@
+# Allow ns-processing to receive traffic from ns-ingestion only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingestion-to-processing
+  namespace: ns-processing
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ns-ingestion
+  policyTypes:
+    - Ingress
+---
+# Allow ns-data-ml to receive traffic from ns-processing only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-processing-to-data-ml
+  namespace: ns-data-ml
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ns-processing
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ns-monitoring
+  policyTypes:
+    - Ingress
+---
+# Deny all ingress by default in ns-data-ml unless explicitly allowed above
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: ns-data-ml
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress

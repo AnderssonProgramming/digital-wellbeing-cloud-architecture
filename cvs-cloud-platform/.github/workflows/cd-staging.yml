@@ -1,0 +1,48 @@
+name: CD — Deploy to Staging
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-staging:
+    name: Helm deploy to ns-staging
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > kubeconfig.yaml
+          echo "KUBECONFIG=$PWD/kubeconfig.yaml" >> $GITHUB_ENV
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.14.0"
+
+      - name: Deploy all services
+        run: |
+          for svc in rule-engine normalizer anonymizer inference-svc; do
+            helm upgrade --install $svc helm/$svc/ \
+              --namespace ns-staging \
+              --set image.tag=${{ github.sha }} \
+              --atomic \
+              --timeout 5m
+          done
+
+  smoke-test:
+    name: Smoke test staging
+    runs-on: ubuntu-22.04
+    needs: deploy-staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: Run smoke test
+        env:
+          BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          JWT_TOKEN: ${{ secrets.STAGING_JWT_TOKEN }}
+        run: python tests/smoke_test.py

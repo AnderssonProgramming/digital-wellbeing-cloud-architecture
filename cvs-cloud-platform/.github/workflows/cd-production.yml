@@ -1,0 +1,66 @@
+name: CD — Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Docker image tag to deploy
+        required: true
+        type: string
+
+jobs:
+  deploy-production:
+    name: Helm deploy to production namespaces
+    runs-on: ubuntu-22.04
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBECONFIG_PRODUCTION }}" | base64 -d > kubeconfig.yaml
+          echo "KUBECONFIG=$PWD/kubeconfig.yaml" >> $GITHUB_ENV
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.14.0"
+
+      - name: Deploy ingestion service
+        run: |
+          helm upgrade --install rule-engine helm/rule-engine/ \
+            --namespace ns-processing \
+            --set image.tag=${{ inputs.image_tag }} \
+            --atomic --timeout 8m
+
+      - name: Deploy processing services
+        run: |
+          for svc in normalizer anonymizer inference-svc; do
+            target_ns="ns-processing"
+            if [ "$svc" = "anonymizer" ] || [ "$svc" = "inference-svc" ]; then
+              target_ns="ns-data-ml"
+            fi
+            helm upgrade --install $svc helm/$svc/ \
+              --namespace $target_ns \
+              --set image.tag=${{ inputs.image_tag }} \
+              --atomic --timeout 8m
+          done
+
+  post-deploy-healthcheck:
+    name: Production health verification
+    runs-on: ubuntu-22.04
+    needs: deploy-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: Run health smoke test
+        env:
+          BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
+          JWT_TOKEN: ${{ secrets.PRODUCTION_JWT_TOKEN }}
+          RULE_ENGINE_URL: ${{ secrets.PRODUCTION_RULE_ENGINE_URL }}
+          NORMALIZER_URL: ${{ secrets.PRODUCTION_NORMALIZER_URL }}
+          ANONYMIZER_URL: ${{ secrets.PRODUCTION_ANONYMIZER_URL }}
+        run: python tests/smoke_test.py

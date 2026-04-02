@@ -1,0 +1,6 @@
+apiVersion: v2
+name: inference-svc
+description: CVS Inference service chart
+type: application
+version: 1.0.0
+appVersion: 1.0.0

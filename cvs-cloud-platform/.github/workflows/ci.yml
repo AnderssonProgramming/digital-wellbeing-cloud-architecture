@@ -1,0 +1,96 @@
+name: CI — Lint, Test, SAST
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-test:
+    name: "${{ matrix.service }} — lint + test"
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        service: [rule-engine, normalizer, anonymizer, inference-svc]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: |
+          pip install --no-cache-dir .[dev]
+
+      - name: Lint (pylint)
+        working-directory: services/${{ matrix.service }}
+        run: pylint ${{ matrix.service }}/ --fail-under=8.0
+
+      - name: Type check (mypy)
+        working-directory: services/${{ matrix.service }}
+        run: mypy ${{ matrix.service }}/ --strict
+
+      - name: Unit tests + coverage
+        working-directory: services/${{ matrix.service }}
+        run: |
+          pytest tests/ \
+            --cov=${{ matrix.service }} \
+            --cov-report=xml \
+            --cov-fail-under=80
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: services/${{ matrix.service }}/coverage.xml
+          flags: ${{ matrix.service }}
+
+  sonar-scan:
+    name: SonarCloud SAST
+    runs-on: ubuntu-22.04
+    needs: lint-and-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  docker-build:
+    name: "${{ matrix.service }} — Docker build"
+    runs-on: ubuntu-22.04
+    needs: sonar-scan
+    strategy:
+      matrix:
+        service: [rule-engine, normalizer, anonymizer, inference-svc]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        if: github.ref == 'refs/heads/main'
+        working-directory: services/${{ matrix.service }}
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/cvs-${{ matrix.service }}:$IMAGE_TAG \
+            -t $ECR_REGISTRY/cvs-${{ matrix.service }}:latest .
+          docker push $ECR_REGISTRY/cvs-${{ matrix.service }}:$IMAGE_TAG
+          docker push $ECR_REGISTRY/cvs-${{ matrix.service }}:latest

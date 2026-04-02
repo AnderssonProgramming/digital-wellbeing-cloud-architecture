@@ -1,0 +1,44 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Daily High-Risk Users",
+      "type": "timeseries",
+      "targets": [{"expr": "sum(cvs_high_risk_users_daily)", "refId": "A"}],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "id": 2,
+      "title": "20-20-20 Compliance Rate",
+      "type": "timeseries",
+      "targets": [{"expr": "avg(cvs_break_compliance_score)", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "id": 3,
+      "title": "Average Ambient Lux",
+      "type": "timeseries",
+      "targets": [{"expr": "avg(cvs_mean_lux_daily)", "refId": "A"}],
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["cvs", "health", "organization"],
+  "templating": {"list": []},
+  "time": {"from": "now-30d", "to": "now"},
+  "timezone": "",
+  "title": "CVS Organizational Health",
+  "uid": "cvs-org-health",
+  "version": 1,
+  "weekStart": ""
+}

@@ -1,0 +1,40 @@
+replicaCount: 1
+
+image:
+  repository: ""
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8004
+
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "512Mi"
+  limits:
+    cpu: "1000m"
+    memory: "1Gi"
+
+env:
+  INFLUXDB_URL: ""
+  INFLUXDB_TOKEN: ""         # Injected from Secret
+  INFLUXDB_ORG: "cvs-org"
+  INFLUXDB_BUCKET: "cvs_platform"
+  S3_MODEL_BUCKET: "cvs-model-artifacts"
+  RISK_SCORE_THRESHOLD: "0.70"
+  LOG_LEVEL: "INFO"
+
+livenessProbe:
+  httpGet:
+    path: /v1/health
+    port: 8004
+  initialDelaySeconds: 20
+  periodSeconds: 10
