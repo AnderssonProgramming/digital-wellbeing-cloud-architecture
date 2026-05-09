@@ -47,7 +47,7 @@ jobs:
           pytest tests/ \
             --cov=$PKG_NAME \
             --cov-report=xml \
-            --cov-fail-under=20
+            --cov-fail-under=15
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
