@@ -1,0 +1,171 @@
+# Stack local de la plataforma CVS para demo / sustentación.
+#
+# Levanta Kafka (single-broker en modo KRaft, sin ZooKeeper), InfluxDB,
+# los cuatro microservicios FastAPI, Prometheus y Grafana. Todo en una
+# máquina.
+#
+# Uso:
+#   docker compose up --build -d
+#   python tests/smoke_test.py
+#   docker compose down -v   # limpia también los volúmenes
+#
+# Puertos publicados:
+#   8001  rule-engine    /v1/health  /metrics
+#   8002  normalizer     /v1/health  /metrics
+#   8003  anonymizer     /v1/health  /metrics
+#   8004  inference-svc  /v1/health  /v1/telemetry/ingest  /v1/scores/{uuid}/current
+#   8086  InfluxDB UI/API  (admin / admin12345)
+#   9092  Kafka (PLAINTEXT desde el host)
+#   9090  Prometheus
+#   3000  Grafana (admin / admin)
+
+services:
+  # ---------- Kafka (KRaft, sin ZooKeeper) ----------
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: cvs-kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9094,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9094 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [cvs-net]
+
+  # ---------- InfluxDB 2.7 ----------
+  influxdb:
+    image: influxdb:2.7
+    container_name: cvs-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: admin12345
+      DOCKER_INFLUXDB_INIT_ORG: cvs-platform
+      DOCKER_INFLUXDB_INIT_BUCKET: cvs-telemetry
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: cvs-local-dev-token
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8086/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [cvs-net]
+
+  # ---------- Microservicios ----------
+  rule-engine:
+    build: ./services/rule-engine
+    container_name: cvs-rule-engine
+    depends_on:
+      kafka: { condition: service_healthy }
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9094
+      KAFKA_TOPIC_IN: cvs.telemetry.raw
+      KAFKA_TOPIC_OUT: cvs.alerts.immediate
+      LOG_LEVEL: INFO
+    ports:
+      - "8001:8001"
+    networks: [cvs-net]
+
+  normalizer:
+    build: ./services/normalizer
+    container_name: cvs-normalizer
+    depends_on:
+      kafka: { condition: service_healthy }
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9094
+      KAFKA_TOPIC_IN: cvs.telemetry.raw
+      KAFKA_TOPIC_OUT: cvs.telemetry.normalized
+      LOG_LEVEL: INFO
+    ports:
+      - "8002:8002"
+    networks: [cvs-net]
+
+  anonymizer:
+    build: ./services/anonymizer
+    container_name: cvs-anonymizer
+    depends_on:
+      kafka:    { condition: service_healthy }
+      influxdb: { condition: service_healthy }
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9094
+      KAFKA_TOPIC_IN: cvs.telemetry.normalized
+      INFLUX_URL: http://influxdb:8086
+      INFLUX_TOKEN: cvs-local-dev-token
+      INFLUX_ORG: cvs-platform
+      INFLUX_BUCKET: cvs-telemetry
+      ORG_HMAC_SECRET: dev-only-please-rotate
+      DP_EPSILON: "1.0"
+      LOG_LEVEL: INFO
+    ports:
+      - "8003:8003"
+    networks: [cvs-net]
+
+  inference-svc:
+    build: ./services/inference-svc
+    container_name: cvs-inference-svc
+    depends_on:
+      influxdb: { condition: service_healthy }
+    environment:
+      INFLUX_URL: http://influxdb:8086
+      INFLUX_TOKEN: cvs-local-dev-token
+      INFLUX_ORG: cvs-platform
+      INFLUX_BUCKET: cvs-telemetry
+      MODEL_PATH: /app/model.joblib
+      LOG_LEVEL: INFO
+    volumes:
+      - ./ml/results/model.joblib:/app/model.joblib:ro
+    ports:
+      - "8004:8004"
+    networks: [cvs-net]
+
+  # ---------- Observabilidad ----------
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: cvs-prometheus
+    ports:
+      - "9091:9090"   # 9091 en el host: el 9090 podria estar ocupado
+    volumes:
+      - ./grafana/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks: [cvs-net]
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: cvs-grafana
+    depends_on: [prometheus, influxdb]
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards-data:ro
+    networks: [cvs-net]
+
+volumes:
+  influxdb-data:
+  grafana-data:
+
+networks:
+  cvs-net:
+    driver: bridge

@@ -3,14 +3,16 @@ from __future__ import annotations
 import json
 import logging
 import os
-from confluent_kafka import Producer
+from typing import Any
+
 from rule_engine.models import Alert
 
 logger = logging.getLogger(__name__)
 TOPIC_ALERTS = "cvs.alerts.immediate"
 
 
-def build_producer() -> Producer:
+def build_producer() -> Any:
+    from confluent_kafka import Producer
     return Producer(
         {
             "bootstrap.servers": os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
@@ -19,7 +21,7 @@ def build_producer() -> Producer:
     )
 
 
-def publish_alert(producer: Producer, alert: Alert) -> None:
+def publish_alert(producer: Any, alert: Alert) -> None:
     payload = json.dumps(alert.model_dump()).encode("utf-8")
     producer.produce(TOPIC_ALERTS, payload)
     producer.flush(5)

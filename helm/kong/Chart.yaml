@@ -1,6 +1,0 @@
-apiVersion: v2
-name: kong
-description: Kong API gateway values-only chart
-type: application
-version: 1.0.0
-appVersion: 1.0.0

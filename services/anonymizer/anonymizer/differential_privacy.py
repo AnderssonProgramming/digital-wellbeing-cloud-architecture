@@ -1,15 +1,28 @@
-"""Differential Privacy: Laplace mechanism with configurable epsilon and sensitivity."""
+"""Privacidad diferencial: mecanismo de Laplace con epsilon y
+sensibilidad configurables por tipo de sensor."""
 from __future__ import annotations
+
+import os
+
 import numpy as np
 
-# Sensitivity per sensor type (from paper Section XI, ADR-004)
+# Sensibilidad por tipo de sensor (rango aproximado de cada lectura).
 SENSOR_SENSITIVITY: dict[str, float] = {
-    "AMBIENT_LIGHT": 500.0,   # lux range
-    "PROXIMITY": 100.0,        # cm range
-    "SCREEN_TIME": 60.0,       # minutes range
+    "AMBIENT_LIGHT": 500.0,   # rango en lux
+    "PROXIMITY": 100.0,       # rango en cm
+    "SCREEN_TIME": 60.0,      # rango en minutos
 }
 
-DEFAULT_EPSILON: float = 1.0  # Privacy budget (GDPR-compliant per paper ADR-004)
+DEFAULT_EPSILON: float = 1.0  # Presupuesto de privacidad (ver paper, sección IX-B).
+
+# En producción la semilla se deja sin fijar a propósito: una secuencia
+# determinista volvería predecible el ruido y rompería la garantía de
+# privacidad. Solo cuando ``DP_SEED`` está en el entorno (entorno de
+# pruebas) usamos una semilla concreta.
+_seed_env = os.environ.get("DP_SEED")
+_rng: np.random.Generator = np.random.default_rng(
+    int(_seed_env) if _seed_env is not None else None
+)
 
 
 def apply_laplace_noise(
@@ -17,20 +30,18 @@ def apply_laplace_noise(
     sensor_type: str,
     epsilon: float = DEFAULT_EPSILON,
 ) -> float:
-    """
-    Add Laplace-distributed noise to a sensor reading.
-
-    noise ~ Laplace(0, sensitivity / epsilon)
+    """Añade ruido Laplace(0, sensibilidad / epsilon) a una lectura.
 
     Args:
-        value: Original sensor reading.
-        sensor_type: One of AMBIENT_LIGHT, PROXIMITY, SCREEN_TIME.
-        epsilon: Privacy budget. Lower = stronger privacy, more noise.
+        value: lectura cruda del sensor.
+        sensor_type: ``AMBIENT_LIGHT``, ``PROXIMITY`` o ``SCREEN_TIME``.
+        epsilon: presupuesto de privacidad. Más pequeño = más privacidad
+            y más ruido.
 
     Returns:
-        Noised float value.
+        El valor con ruido como ``float``.
     """
     sensitivity = SENSOR_SENSITIVITY.get(sensor_type, 1.0)
     scale = sensitivity / epsilon
-    noise = np.random.laplace(loc=0.0, scale=scale)
+    noise = _rng.laplace(loc=0.0, scale=scale)
     return float(value + noise)

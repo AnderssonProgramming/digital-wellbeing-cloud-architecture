@@ -1,0 +1,35 @@
+# Configuracion minima de Prometheus para el stack local docker-compose.
+# Hace scrape al endpoint /metrics de cada microservicio FastAPI.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: rule-engine
+    metrics_path: /metrics
+    static_configs:
+      - targets: [rule-engine:8001]
+        labels:
+          service: rule-engine
+
+  - job_name: normalizer
+    metrics_path: /metrics
+    static_configs:
+      - targets: [normalizer:8002]
+        labels:
+          service: normalizer
+
+  - job_name: anonymizer
+    metrics_path: /metrics
+    static_configs:
+      - targets: [anonymizer:8003]
+        labels:
+          service: anonymizer
+
+  - job_name: inference-svc
+    metrics_path: /metrics
+    static_configs:
+      - targets: [inference-svc:8004]
+        labels:
+          service: inference-svc

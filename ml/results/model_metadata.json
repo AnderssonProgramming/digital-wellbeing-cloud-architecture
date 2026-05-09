@@ -1,0 +1,24 @@
+{
+  "version": "20260507-122958",
+  "f1_score": 0.8537,
+  "auc_roc": 0.8941,
+  "precision": 0.8625,
+  "recall": 0.8482,
+  "trained_at": "20260507-122958",
+  "feature_names": [
+    "mean_lux_daily",
+    "std_lux_daily",
+    "mean_proximity_cm",
+    "min_proximity_cm",
+    "total_screen_min",
+    "max_cont_session_min",
+    "lux_screen_ratio",
+    "evening_screen_ratio",
+    "break_compliance_score"
+  ],
+  "threshold": 0.7,
+  "cv_f1_mean": 0.8531,
+  "cv_f1_std": 0.0035,
+  "cv_auc_mean": 0.8917,
+  "cv_auc_std": 0.0025
+}
