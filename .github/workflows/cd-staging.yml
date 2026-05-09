@@ -14,6 +14,7 @@ jobs:
       - name: Configure kubectl
         run: |
           echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > kubeconfig.yaml
+          chmod 600 kubeconfig.yaml
           echo "KUBECONFIG=$PWD/kubeconfig.yaml" >> $GITHUB_ENV
 
       - name: Install Helm
@@ -22,6 +23,8 @@ jobs:
           version: "3.14.0"
 
       - name: Deploy all services
+        env:
+          KUBECONFIG: ./kubeconfig.yaml
         run: |
           for svc in rule-engine normalizer anonymizer inference-svc; do
             helm upgrade --install $svc helm/$svc/ \
