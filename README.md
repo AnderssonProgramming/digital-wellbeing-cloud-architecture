@@ -394,6 +394,12 @@ Lo que queda como **trabajo futuro honesto** (declarado en el paper):
 
 ---
 
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia **Apache 2.0**. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+
+---
+
 <div align="center">
 <sub>📄 Paper completo en <a href="paper/paper-cvs-es.pdf">paper/paper-cvs-es.pdf</a> · 📘 Runbook en <a href="RUNBOOK.md">RUNBOOK.md</a></sub>
 </div>
