@@ -23,5 +23,6 @@ ml/results/*.joblib
 services/*/htmlcov/
 services/*/.coverage
 services/*/.pytest_cache/
+.pytest_cache/
 mobile/android/CVSAgent/.gradle/
 mobile/android/CVSAgent/app/build/
