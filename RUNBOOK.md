@@ -300,14 +300,14 @@ pdflatex -interaction=nonstopmode paper-cvs-es.tex
 
 ---
 
-## 8. Checklist final antes de la sustentación
+## 8. Checklist final antes de la presentación
 
 - [ ] `python ml/generate_synthetic_dataset.py` corre sin errores.
 - [ ] `python ml/train.py` reporta F1 ≥ 0,75 y AUC ≥ 0,80.
 - [ ] `python ml/plots.py` genera 5 PDFs en `paper/figures/`.
 - [ ] `python tests/privacy_audit.py` reporta `5/5 PASS`.
 - [ ] Todos los `pytest` por microservicio pasan.
-- [ ] El paper compila a 21 páginas sin warnings de citas.
+- [ ] El paper compila a 16 páginas sin warnings de citas.
 - [ ] El README muestra los 6 diagramas profesionales (no Mermaid).
 - [ ] No hay credenciales AWS en el repo (`git grep -E
       "AKIA|ASIA|aws_access_key_id"` debe salir vacío).

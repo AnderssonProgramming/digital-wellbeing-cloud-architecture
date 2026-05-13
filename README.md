@@ -26,7 +26,7 @@
 
 **Materia:** AREP / TDSE — *Transformación Digital, Arq. de Soluciones Empresariales e IA*
 **Institución:** Escuela Colombiana de Ingeniería Julio Garavito
-**Período:** 2026-2 · Tercer tercio (entrega final)
+**Período:** 2026-1 · Entrega final
 
 </div>
 
@@ -47,7 +47,7 @@ mensajes en la nube, las anonimiza con HMAC + ruido de Laplace y produce
 un **puntaje de riesgo de CVS** por usuario más un panel agregado por
 área de la organización.
 
-📄 El paper técnico completo (en español, **22 páginas**) está en
+📄 El paper técnico completo (en español, **16 páginas**) está en
 [`paper/paper-cvs-es.pdf`](paper/paper-cvs-es.pdf).
 
 ---
@@ -55,20 +55,21 @@ un **puntaje de riesgo de CVS** por usuario más un panel agregado por
 ## 🧭 Tabla de contenido
 
 1. [🧠 Vista general del sistema](#vista-general-del-sistema)
-2. [☁️ Arquitectura objetivo en AWS](#arquitectura-objetivo-en-aws)
-3. [🔁 Flujo de un lote de telemetría](#flujo-de-un-lote-de-telemetría)
-4. [🤖 Pipeline de Machine Learning](#pipeline-de-machine-learning)
-5. [📈 Stack de observabilidad](#stack-de-observabilidad)
-6. [🔐 Seguridad y privacidad](#seguridad-y-privacidad)
-7. [⚙️ Microservicios y tópicos](#microservicios-y-tópicos)
-8. [📦 Estructura del repositorio](#estructura-del-repositorio)
-9. [🎯 Atributos de calidad y SLOs](#atributos-de-calidad-y-slos)
-10. [🚀 Cómo correrlo (docker compose)](#cómo-correrlo-docker-compose)
-11. [✅ Smoke test end-to-end](#smoke-test-end-to-end)
-12. [📊 Resultados del modelo](#resultados-del-modelo)
-13. [🛰️ Despliegue en AWS](#despliegue-en-aws)
-14. [👀 Estado actual del prototipo](#estado-actual-del-prototipo)
-15. [👥 Equipo](#equipo)
+2. [📺 Demostración y Presentación](#demostración-y-presentación)
+3. [☁️ Arquitectura objetivo en AWS](#arquitectura-objetivo-en-aws)
+4. [🔁 Flujo de un lote de telemetría](#flujo-de-un-lote-de-telemetría)
+5. [🤖 Pipeline de Machine Learning](#pipeline-de-machine-learning)
+6. [📈 Stack de observabilidad](#stack-de-observabilidad)
+7. [🔐 Seguridad y privacidad](#seguridad-y-privacidad)
+8. [⚙️ Microservicios y tópicos](#microservicios-y-tópicos)
+9. [📦 Estructura del repositorio](#estructura-del-repositorio)
+10. [🎯 Atributos de calidad y SLOs](#atributos-de-calidad-y-slos)
+11. [🚀 Cómo correrlo (docker compose)](#cómo-correrlo-docker-compose)
+12. [✅ Smoke test end-to-end](#smoke-test-end-to-end)
+13. [📊 Resultados del modelo](#resultados-del-modelo)
+14. [🛰️ Despliegue en AWS](#despliegue-en-aws)
+15. [👀 Estado actual del prototipo](#estado-actual-del-prototipo)
+16. [👥 Equipo](#equipo)
 
 ---
 
@@ -86,6 +87,13 @@ de salud ocupacional.
 > (**Rule Engine**, **Normalizer**, **Anonymizer**, **Inference**) consumen
 > Kafka y producen un **CVS Risk Score** que **Grafana** y el **Alert
 > Dispatcher (FCM)** transforman en panel y notificaciones.
+
+---
+
+## 📺 Demostración y Presentación
+
+- **Video Demo (YouTube):** [Plataforma CVS - Demo](https://youtu.be/GitUkfgdDP8)
+- **Diapositivas del Proyecto:** [cvs-slides.pdf](cvs-slides.pdf)
 
 ---
 
@@ -230,7 +238,7 @@ en el line-protocol de InfluxDB).
 │  ├─ privacy_audit.py         # 5/5 PASS
 │  └─ load/cvs_load_test.jmx   # JMeter, 50 hilos × 10 iteraciones
 ├─ paper/
-│  ├─ paper-cvs-es.tex         # IEEE conference, 22 páginas
+│  ├─ paper-cvs-es.tex         # IEEE conference, 16 páginas
 │  ├─ paper-cvs-es.pdf
 │  └─ figures/                 # 6 PNG de arquitectura + 5 PDF del modelo
 ├─ .github/workflows/          # ci, cd-staging, cd-production, ml-pipeline
